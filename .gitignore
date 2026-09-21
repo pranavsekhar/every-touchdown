@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.DS_Store
+work/
+__pycache__/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# Logs, test output, and tool caches
+*.log
+*.tsbuildinfo
+*.py[cod]
+coverage/
+.vite/
+.pytest_cache/
+
+# Local editor files
+.idea/
+.vscode/

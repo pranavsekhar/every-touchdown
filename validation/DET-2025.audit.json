@@ -1,0 +1,319 @@
+{
+  "source": {
+    "provider": "nflverse / nflfastR",
+    "url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2025.csv.gz",
+    "sha256": "2f135887790a013fd004e609e37096bb4816d5cc80b9f19122e1bad478961978",
+    "format": "csv.gz",
+    "scope": "2025 REG + POST (Detroit has REG games only)",
+    "dictionary": "https://nflreadr.nflverse.com/articles/dictionary_pbp.html"
+  },
+  "summary": {
+    "total": 56,
+    "passing": 35,
+    "rushing": 21,
+    "games": 17,
+    "officialDetroitTDs": 57,
+    "excludedOfficialTDs": 1,
+    "nullifiedScoringAttempts": 3,
+    "missingAirYacLocation": 0,
+    "missingRunGap": 8,
+    "negativeAirYards": 7,
+    "unsegmentedPasses": 0,
+    "unrenderablePlays": 0
+  },
+  "gameIds": [
+    "2025_01_DET_GB",
+    "2025_02_CHI_DET",
+    "2025_03_DET_BAL",
+    "2025_04_CLE_DET",
+    "2025_05_DET_CIN",
+    "2025_06_DET_KC",
+    "2025_07_TB_DET",
+    "2025_09_MIN_DET",
+    "2025_10_DET_WAS",
+    "2025_11_DET_PHI",
+    "2025_12_NYG_DET",
+    "2025_13_GB_DET",
+    "2025_14_DAL_DET",
+    "2025_15_DET_LA",
+    "2025_16_PIT_DET",
+    "2025_17_DET_MIN",
+    "2025_18_DET_CHI"
+  ],
+  "excluded": [
+    {
+      "id": "2025_04_CLE_DET:3492",
+      "scoringTeam": "DET",
+      "reason": "Special-teams/return touchdown (punt)",
+      "description": "(13:56) 13-C.Bojorquez punts 39 yards to DET 35, Center-50-R.Sunahara. 11-K.Raymond for 65 yards, TOUCHDOWN. DET-25-J.Saylors was injured during the play."
+    }
+  ],
+  "nullified": [
+    {
+      "id": "2025_06_DET_KC:438",
+      "reason": "Source touchdown=0; nullified by penalty",
+      "description": "(5:28) (Shotgun) Direct snap to 5-D.Montgomery. 5-D.Montgomery pass short left to 16-J.Goff for 1 yard, TOUCHDOWN NULLIFIED by Penalty. PENALTY on DET-16-J.Goff, Illegal Motion, 4 yards, enforced at KC 1 - No Play."
+    },
+    {
+      "id": "2025_16_PIT_DET:4774",
+      "reason": "Source touchdown=0; nullified by penalty",
+      "description": "(:25) (No Huddle, Shotgun) 16-J.Goff pass short right to 14-A.St. Brown for 1 yard, TOUCHDOWN NULLIFIED by Penalty. PENALTY on DET-18-I.TeSlaa, Offensive Pass Interference, 10 yards, enforced at PIT 1 - No Play."
+    },
+    {
+      "id": "2025_16_PIT_DET:4913",
+      "reason": "Source touchdown=0; nullified by penalty",
+      "description": "(:08) (Shotgun) 16-J.Goff pass short left to 14-A.St. Brown to PIT 8 for 1 yard. Lateral to 16-J.Goff for 8 yards, TOUCHDOWN NULLIFIED by Penalty. PENALTY on DET-14-A.St. Brown, Offensive Pass Interference, 0 yards, enforced at PIT 9 - No Play."
+    }
+  ],
+  "missing": [],
+  "missingRunGap": [
+    {
+      "id": "2025_02_CHI_DET:862",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_03_DET_BAL:307",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_03_DET_BAL:1302",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_07_TB_DET:1556",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_07_TB_DET:2813",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_09_MIN_DET:1216",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_14_DAL_DET:891",
+      "runLocation": "middle"
+    },
+    {
+      "id": "2025_14_DAL_DET:1803",
+      "runLocation": "middle"
+    }
+  ],
+  "flagged": [],
+  "negativeAirYards": [
+    "2025_04_CLE_DET:4134",
+    "2025_05_DET_CIN:200",
+    "2025_05_DET_CIN:2429",
+    "2025_12_NYG_DET:1157",
+    "2025_13_GB_DET:2028",
+    "2025_15_DET_LA:1621",
+    "2025_16_PIT_DET:4231"
+  ],
+  "byWeek": {
+    "1": 1,
+    "2": 7,
+    "3": 5,
+    "4": 3,
+    "5": 5,
+    "6": 2,
+    "7": 3,
+    "9": 3,
+    "10": 5,
+    "11": 1,
+    "12": 4,
+    "13": 3,
+    "14": 5,
+    "15": 4,
+    "16": 3,
+    "17": 1,
+    "18": 1
+  },
+  "representativeTouchdowns": [
+    {
+      "id": "2025_02_CHI_DET:3030",
+      "playId": "3030",
+      "gameId": "2025_02_CHI_DET",
+      "team": "DET",
+      "opponent": "CHI",
+      "season": 2025,
+      "seasonType": "REG",
+      "week": 2,
+      "gameDate": "2025-09-14",
+      "type": "pass",
+      "passer": "J.Goff",
+      "passerId": "00-0033106",
+      "scorer": "J.Williams",
+      "scorerId": "00-0037240",
+      "startYardline": 56.0,
+      "yardline100": 44.0,
+      "yards": 44.0,
+      "airYards": 42.0,
+      "yardsAfterCatch": 2.0,
+      "location": "left",
+      "runLocation": null,
+      "runGap": null,
+      "quarter": 3,
+      "clock": "06:28",
+      "down": 3.0,
+      "yardsToGo": 8.0,
+      "description": "(6:28) (Shotgun) 16-J.Goff pass deep left to 1-J.Williams for 44 yards, TOUCHDOWN.",
+      "geometry": {
+        "losX": 6.0,
+        "catchX": 48.0,
+        "endX": 50,
+        "losSource": "yardline_100",
+        "segmentation": "recorded"
+      },
+      "dataFlags": []
+    },
+    {
+      "id": "2025_13_GB_DET:2028",
+      "playId": "2028",
+      "gameId": "2025_13_GB_DET",
+      "team": "DET",
+      "opponent": "GB",
+      "season": 2025,
+      "seasonType": "REG",
+      "week": 13,
+      "gameDate": "2025-11-27",
+      "type": "pass",
+      "passer": "J.Goff",
+      "passerId": "00-0033106",
+      "scorer": "J.Williams",
+      "scorerId": "00-0037240",
+      "startYardline": 78.0,
+      "yardline100": 22.0,
+      "yards": 22.0,
+      "airYards": -5.0,
+      "yardsAfterCatch": 27.0,
+      "location": "left",
+      "runLocation": null,
+      "runGap": null,
+      "quarter": 2,
+      "clock": "00:31",
+      "down": 3.0,
+      "yardsToGo": 3.0,
+      "description": "(:31) (Shotgun) 16-J.Goff pass short left to 1-J.Williams for 22 yards, TOUCHDOWN.",
+      "geometry": {
+        "losX": 28.0,
+        "catchX": 23.0,
+        "endX": 50,
+        "losSource": "yardline_100",
+        "segmentation": "recorded"
+      },
+      "dataFlags": []
+    },
+    {
+      "id": "2025_12_NYG_DET:1804",
+      "playId": "1804",
+      "gameId": "2025_12_NYG_DET",
+      "team": "DET",
+      "opponent": "NYG",
+      "season": 2025,
+      "seasonType": "REG",
+      "week": 12,
+      "gameDate": "2025-11-23",
+      "type": "pass",
+      "passer": "J.Goff",
+      "passerId": "00-0033106",
+      "scorer": "J.Gibbs",
+      "scorerId": "00-0039139",
+      "startYardline": 97.0,
+      "yardline100": 3.0,
+      "yards": 3.0,
+      "airYards": 0.0,
+      "yardsAfterCatch": 3.0,
+      "location": "right",
+      "runLocation": null,
+      "runGap": null,
+      "quarter": 2,
+      "clock": "02:21",
+      "down": 1.0,
+      "yardsToGo": 3.0,
+      "description": "(2:21) (No Huddle) 70-D.Skipper reported in as eligible. 16-J.Goff pass short right to 0-J.Gibbs for 3 yards, TOUCHDOWN.",
+      "geometry": {
+        "losX": 47.0,
+        "catchX": 47.0,
+        "endX": 50,
+        "losSource": "yardline_100",
+        "segmentation": "recorded"
+      },
+      "dataFlags": []
+    },
+    {
+      "id": "2025_07_TB_DET:1556",
+      "playId": "1556",
+      "gameId": "2025_07_TB_DET",
+      "team": "DET",
+      "opponent": "TB",
+      "season": 2025,
+      "seasonType": "REG",
+      "week": 7,
+      "gameDate": "2025-10-20",
+      "type": "rush",
+      "passer": null,
+      "passerId": null,
+      "scorer": "J.Gibbs",
+      "scorerId": "00-0039139",
+      "startYardline": 22.0,
+      "yardline100": 78.0,
+      "yards": 78.0,
+      "airYards": null,
+      "yardsAfterCatch": null,
+      "location": "middle",
+      "runLocation": "middle",
+      "runGap": null,
+      "quarter": 2,
+      "clock": "06:01",
+      "down": 1.0,
+      "yardsToGo": 10.0,
+      "description": "(6:01) (Shotgun) 0-J.Gibbs up the middle for 78 yards, TOUCHDOWN.",
+      "geometry": {
+        "losX": -28.0,
+        "catchX": null,
+        "endX": 50,
+        "losSource": "yardline_100",
+        "segmentation": "not-applicable"
+      },
+      "dataFlags": []
+    },
+    {
+      "id": "2025_02_CHI_DET:862",
+      "playId": "862",
+      "gameId": "2025_02_CHI_DET",
+      "team": "DET",
+      "opponent": "CHI",
+      "season": 2025,
+      "seasonType": "REG",
+      "week": 2,
+      "gameDate": "2025-09-14",
+      "type": "rush",
+      "passer": null,
+      "passerId": null,
+      "scorer": "D.Montgomery",
+      "scorerId": "00-0035685",
+      "startYardline": 99.0,
+      "yardline100": 1.0,
+      "yards": 1.0,
+      "airYards": null,
+      "yardsAfterCatch": null,
+      "location": "middle",
+      "runLocation": "middle",
+      "runGap": null,
+      "quarter": 1,
+      "clock": "02:45",
+      "down": 1.0,
+      "yardsToGo": 1.0,
+      "description": "(2:45) (No Huddle) 5-D.Montgomery up the middle for 1 yard, TOUCHDOWN.",
+      "geometry": {
+        "losX": 49.0,
+        "catchX": null,
+        "endX": 50,
+        "losSource": "yardline_100",
+        "segmentation": "not-applicable"
+      },
+      "dataFlags": []
+    }
+  ]
+}
