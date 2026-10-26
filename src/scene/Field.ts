@@ -20,13 +20,13 @@ export function createField(label = 'DETROIT', palette: Palette = paletteFor('DE
     if (x % 5 === 0) continue;
     for (const z of [0.5, 23.55, 28.75, 51.8]) { c.beginPath(); c.moveTo(x * scale, z * scale); c.lineTo(x * scale, (z + 0.85) * scale); c.stroke(); }
   }
-  c.fillStyle = dark?'rgba(190,207,203,0.52)':'rgba(100,117,108,0.52)'; c.font = '500 62px Helvetica Neue, Arial'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = dark?'rgba(190,207,203,0.52)':'rgba(100,117,108,0.52)'; c.font = '400 62px "Plex Mono", monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
   for (let x = 20; x <= 100; x += 10) {
     const n = String(Math.min(x - 10, 110 - x));
     c.save(); c.translate(x * scale, 870); c.fillText(n, 0, 0); c.restore();
     c.save(); c.translate(x * scale, 196); c.rotate(Math.PI); c.fillText(n, 0, 0); c.restore();
   }
-  c.font = '500 58px Helvetica Neue, Arial'; c.fillStyle = palette.pass; c.globalAlpha=dark?.48:.45;
+  c.font = '500 58px Plex, sans-serif'; c.fillStyle = palette.pass; c.globalAlpha=dark?.48:.45;
   for (const x of [2300]) { c.save(); c.translate(x, 533); c.rotate(-Math.PI / 2); c.fillText(label.toUpperCase().split('').join(' '), 0, 0); c.restore(); }
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 8;
   const surface = new THREE.Mesh(new THREE.PlaneGeometry(120, 53.3), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));

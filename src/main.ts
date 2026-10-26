@@ -19,23 +19,23 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 async function initialize() {
 
 app.innerHTML = `
-<header><a class="wordmark" href="/" aria-label="Every Touchdown home"><span class="brand-mark" aria-hidden="true">∩</span> EVERY TOUCHDOWN</a><button id="theme-toggle" aria-label="Switch to dark theme">Dark ◐</button></header>
-<main><section class="heading" aria-label="Team and season"><div><div class="eyebrow"><span></span><button id="choose-team" aria-haspopup="dialog">Choose team <small>⌄</small></button></div></div><div class="season"><button id="choose-season" aria-haspopup="dialog">2025</button><span id="season-scope"></span></div></section>
+<header><a class="wordmark" href="/" aria-label="Every Touchdown home">Every Touchdown</a><button id="theme-toggle" aria-label="Switch to dark theme">Dark theme</button></header>
+<main><section class="heading" aria-label="Team and season"><div><div class="eyebrow"><button id="choose-team" aria-haspopup="dialog">Choose team</button></div></div><div class="season"><button id="choose-season" aria-haspopup="dialog">2025</button><span id="season-scope"></span></div></section>
 <div id="scene" role="group" aria-roledescription="interactive touchdown sculpture" tabindex="0"></div>
 <section id="play-caption" class="play-caption" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true"><p id="play-name"></p><p id="play-yards"></p><p id="play-split"></p><p id="play-game"></p><p id="play-description" class="play-description" aria-hidden="true"></p></section>
 
-<div class="camera-tools" aria-label="Camera controls"><button id="play-season">▷ <span>Play Season</span></button><button id="rotate-left" aria-label="Rotate view left">↶</button><button id="reset" title="Reset view (R)">Reset view <span>↗</span></button><button id="rotate-right" aria-label="Rotate view right">↷</button></div>
+<div class="camera-tools" aria-label="Camera controls"><button id="play-season"><svg viewBox="0 0 12 14" aria-hidden="true"><path d="M2 1.5 10.5 7 2 12.5Z"/></svg><span>Play Season</span></button><button id="rotate-left" aria-label="Rotate view left">↶</button><button id="reset" title="Reset view (R)">Reset view</button><button id="rotate-right" aria-label="Rotate view right">↷</button></div>
 <section id="season-player" class="season-player" aria-label="Season playback" hidden><div class="player-top"><span id="season-time"></span><div><button id="season-pause">Pause</button><button id="season-restart">Restart</button><button id="season-exit">Exit</button></div></div><input id="season-seek" aria-label="Season progression" type="range" min="0" max="40" step="0.01" value="0"></section>
 <p id="season-moment" hidden></p>
 <section id="route-error" role="alert" hidden><p></p><a href="/DET/2025">Return to Detroit 2025 ↗</a></section>
-<footer><div class="count"><strong id="td-count"></strong><div>TOUCHDOWNS<span id="source-caption"></span></div></div><div class="legend" role="group" aria-label="Touchdown type"><button data-filter="all" aria-pressed="true">ALL <b id="all-count"></b></button><button data-filter="pass" aria-pressed="false"><i class="pass"></i>PASS <b id="pass-count"></b></button><button data-filter="rush" aria-pressed="false"><i class="rush"></i>RUSH <b id="rush-count"></b></button></div><div class="instructions">Drag to orbit <span>·</span> Shift-drag to pan <span>·</span> Scroll to zoom</div></footer>
-<div class="bottom-line"><button id="about" aria-expanded="false" aria-controls="help" aria-haspopup="dialog">About the data <span>+</span></button></div>
+<footer><div class="count"><strong id="td-count"></strong><div>Touchdowns<span id="source-caption"></span></div></div><div class="legend" role="group" aria-label="Touchdown type"><button data-filter="all" aria-pressed="true">All <b id="all-count"></b></button><button data-filter="pass" aria-pressed="false"><i class="pass"></i>Pass <b id="pass-count"></b></button><button data-filter="rush" aria-pressed="false"><i class="rush"></i>Rush <b id="rush-count"></b></button></div><div class="instructions">Drag to orbit <span>·</span> Shift-drag to pan <span>·</span> Scroll to zoom</div></footer>
+<div class="bottom-line"><button id="about" aria-expanded="false" aria-controls="help" aria-haspopup="dialog">About the data</button></div>
 <p id="route-notice" role="status" hidden></p>
-</main><dialog id="picker" aria-labelledby="picker-title"><div class="picker-heading"><h2 id="picker-title"></h2><button id="close-picker" aria-label="Close picker">×</button></div><div id="picker-options"></div><p class="picker-note">Regular season + postseason · nflverse</p></dialog><dialog id="help" aria-labelledby="help-title"><div class="picker-heading"><h2 id="help-title">Every Touchdown</h2><button id="close-help" aria-label="Close help" autofocus>×</button></div><p>Each path is an offensive touchdown scored by the selected team in the selected season.</p><dl><dt>Passing</dt><dd>The aerial arc runs from the line of scrimmage to the catch point using air yards. The lower continuation shows yards after catch.</dd><dt>Rushing</dt><dd>The field-level path shows the scoring run from the line of scrimmage to the end zone.</dd><dt>Placement & data</dt><dd>Paths use nflverse/nflfastR play-by-play. Lateral placement uses coarse left/middle/right locations and deterministic variation—not player tracking. Missing air/YAC is shown without an invented catch. Defensive and special-teams scores are excluded.</dd></dl><p class="help-controls">Drag to orbit · Shift/right-drag to pan · Scroll or two-finger pinch to zoom/pan · Click/tap a path to inspect · Double-click to focus · Play Season builds chronologically.</p><p class="help-controls">Keyboard: focus the field, then ↑/↓ to explore, Enter to select, F to focus, R to reset, Escape to clear.</p></dialog>`;
+</main><dialog id="picker" aria-labelledby="picker-title"><div class="picker-heading"><h2 id="picker-title"></h2><button id="close-picker" aria-label="Close picker">×</button></div><div id="picker-options"></div><p class="picker-note">Regular season + postseason · nflverse</p></dialog><dialog id="help" aria-labelledby="help-title"><div class="picker-heading"><h2 id="help-title">Every path is a touchdown.</h2><button id="close-help" aria-label="Close help">×</button></div><p class="intro-lead">This sculpture shows every offensive touchdown from your team’s season.</p><p>Passes rise to the catch, then follow the run. Rushes stay near the field.</p><p>Drag to explore. Select a path to inspect the play, or press <strong>Play Season</strong> to watch the year unfold.</p><button id="explore-season" class="intro-action" autofocus>Explore the season</button><details class="help-methodology"><summary>How the paths use the data</summary><dl><dt>Passing</dt><dd>The aerial arc runs from the line of scrimmage to the catch point using air yards. The lower continuation shows yards after catch.</dd><dt>Rushing</dt><dd>The field-level path shows the scoring run from the line of scrimmage to the end zone.</dd><dt>Placement & data</dt><dd>Paths use nflverse/nflfastR play-by-play. Lateral placement uses coarse left/middle/right locations and deterministic variation—not player tracking. Missing air/YAC is shown without an invented catch. Defensive and special-teams scores are excluded.</dd></dl><p class="help-controls">Drag to orbit · Shift/right-drag to pan · Scroll or two-finger pinch to zoom/pan · Click/tap a path to inspect · Double-click to focus · Play Season builds chronologically.</p><p class="help-controls">Keyboard: focus the field, then ↑/↓ to explore, Enter to select, F to focus, R to reset, Escape to clear.</p></details></dialog>`;
 const container = document.querySelector<HTMLDivElement>('#scene')!;
 const main = document.querySelector('main')!;
 const picker = document.querySelector<HTMLDialogElement>('#picker')!;
-const catalog = await loadCatalog();
+const [catalog] = await Promise.all([loadCatalog(),document.fonts.load('400 12px "Plex Mono"').catch(()=>[]),document.fonts.load('500 12px Plex').catch(()=>[])]);
 let renderer: THREE.WebGLRenderer;
 try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); }
 catch { throw new Error('This sculpture needs WebGL. Please use a browser with hardware acceleration enabled.'); }
@@ -92,7 +92,7 @@ function setTheme() {
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='light'?'#f7f5ef':'#202a30');
  document.documentElement.style.setProperty('--team-accent',palette.pass);
  document.documentElement.style.setProperty('--rush-accent',palette.rush);
- text('#theme-toggle',theme==='light'?'Dark ◐':'Light ◑');
+ text('#theme-toggle',theme==='light'?'Dark theme':'Light theme');
  document.querySelector('#theme-toggle')!.setAttribute('aria-label',`Switch to ${theme==='light'?'dark':'light'} theme`);
  if(field) {disposeObject(field);field=createField(currentTeam,palette);scene.add(field);}
  paths.forEach((p,i)=>paintTouchdown(p.group,palette,plays[i].type));
@@ -139,9 +139,9 @@ async function navigate(team: string, year: number, push = true) {
     if(push && previousTeam!==team)track('team_change');if(push && previousYear!==year)track('season_change');
     const name=teamName(team,year), accent=paletteFor(team,theme).pass;
     document.documentElement.style.setProperty('--team-accent',accent);
-    text('#choose-team',name.toUpperCase()+' ⌄'); text('#choose-season',String(year));
+    text('#choose-team',name); text('#choose-season',String(year));
 
-    text('#season-scope',data.seasonTypes.includes('POST')?'REGULAR + POSTSEASON':'REGULAR SEASON');
+    text('#season-scope',data.seasonTypes.includes('POST')?'Regular + postseason':'Regular season');
     text('#td-count',String(data.summary.total)); text('#pass-count',String(data.summary.passing)); text('#rush-count',String(data.summary.rushing));
     text('#source-caption',`Offense · ${year} · nflverse`);
     const moment=document.querySelector('#season-moment')!; moment.replaceChildren(document.createTextNode(`${year} ${name.toUpperCase()}`)); const count=document.createElement('span'); count.textContent=`${data.summary.total} TOUCHDOWNS`; moment.append(count);
@@ -162,7 +162,8 @@ async function navigate(team: string, year: number, push = true) {
     container.dataset.passingCount=String(data.summary.passing); container.dataset.rushingCount=String(data.summary.rushing);
     container.setAttribute('aria-label',`${name} ${year}: ${paths.length} real offensive touchdowns. Drag to orbit, Shift-drag to pan, scroll to zoom. Up/Down explores plays, Enter selects, F focuses, Escape clears, R resets.`);
     main.classList.remove('is-changing');
-    if(firstLoad && !reduced.matches)reveal=new LandingReveal(paths,plays,field!);firstLoad=false;
+    const introduced=firstLoad && showFirstVisit();
+    if(firstLoad && !reduced.matches && !introduced)reveal=new LandingReveal(paths,plays,field!);firstLoad=false;
   } catch(e) {
     if(token!==request || (e instanceof Error && e.name==='AbortError')) return;
     disposeSeason(); main.classList.remove('is-changing'); main.classList.add('invalid-route'); error.hidden=false;
@@ -203,10 +204,38 @@ document.querySelector('#rotate-right')!.addEventListener('click',()=>rotate(.2)
 container.addEventListener('keydown',e=>{if(e.shiftKey&&e.key.startsWith('Arrow')) navigation?.interrupt(); if(!e.shiftKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')) {e.preventDefault();rotate(e.key==='ArrowLeft'?-.15:.15);} if(e.key.toLowerCase()==='r')home();},options);
 const about=document.querySelector<HTMLButtonElement>('#about')!;
 const help=document.querySelector<HTMLDialogElement>('#help')!;
-about.addEventListener('click',()=>{help.showModal();about.setAttribute('aria-expanded','true');track('help_open');},options);
+const introductionKey='touchdown-introduction-seen-v1';
+let introductionSeen=false;
+try{introductionSeen=localStorage.getItem(introductionKey)==='true';}catch{}
+let helpReturn:HTMLElement=about;
+function openHelp(automatic=false){
+ finishReveal();helpReturn=automatic?container:about;
+ help.querySelector('details')!.open=false;
+ help.returnValue='';help.showModal();about.setAttribute('aria-expanded','true');track('help_open');
+}
+function showFirstVisit(){if(introductionSeen)return false;openHelp(true);return true;}
+about.addEventListener('click',()=>openHelp(),options);
 document.querySelector('#close-help')!.addEventListener('click',()=>help.close(),options);
-help.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();document.querySelector<HTMLButtonElement>('#close-help')!.focus();}},options);
-help.addEventListener('close',()=>{about.setAttribute('aria-expanded','false');about.focus({preventScroll:true});},options);
+document.querySelector('#explore-season')!.addEventListener('click',()=>help.close('explore'),options);
+help.addEventListener('click',e=>{if(e.target!==help)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();},options);
+help.addEventListener('keydown',e=>{
+ if(e.key!=='Tab')return;
+ const controls=Array.from(help.querySelectorAll<HTMLElement>('button,summary'));
+ const first=controls[0],last=controls[controls.length-1];
+ if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+ else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+},options);
+help.addEventListener('close',()=>{
+ introductionSeen=true;try{localStorage.setItem(introductionKey,'true');}catch{}
+ about.setAttribute('aria-expanded','false');helpReturn.focus({preventScroll:true});
+ if(help.returnValue==='explore' && paths.length && field){
+  applyFilter();
+  if(!reduced.matches){
+   const visible=filterTouchdowns(plays,filter),ids=new Set(visible.map(p=>p.id));
+   reveal=new LandingReveal(paths.filter(p=>ids.has(p.group.name)),visible,field);
+  }
+ }
+},options);
 for(const event of ['pointerdown','pointermove','wheel','keydown'] as const)document.addEventListener(event,finishReveal,{capture:true,passive:true,signal:events.signal});
 reduced.addEventListener('change',()=>{if(reduced.matches)finishReveal();},options);
 window.addEventListener('popstate',readRoute,options);
