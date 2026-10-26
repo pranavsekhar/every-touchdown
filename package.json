@@ -5,14 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/production-metadata.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "ingest": "python3 scripts/ingest-nflverse.py",
     "test:data": "python3 -m unittest discover -s scripts -p \"test_*.py\"",
     "test:geometry": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/touchdowns/geometry.ts && node scripts/test-geometry.mjs",
     "test:interaction": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/interaction/PathPicker.ts && node scripts/test-interaction.mjs",
     "test:navigation": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/scene/Navigation.ts && node scripts/test-navigation.mjs",
-    "test:playback": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/playback/DrawTouchdown.ts src/playback/timeline.ts && node scripts/test-playback.mjs"
+    "test:playback": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/playback/DrawTouchdown.ts src/playback/timeline.ts && node scripts/test-playback.mjs",
+    "test:archive": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/touchdowns/geometry.ts src/playback/timeline.ts && node scripts/test-archive.mjs",
+    "test:appearance": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/appearance.ts src/data/filter.ts src/data/teams.ts src/interaction/PathPicker.ts src/playback/DrawTouchdown.ts src/playback/timeline.ts && node scripts/test-appearance.mjs",
+    "test:launch": "tsc --noEmit false --outDir work/check --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/scene/LandingReveal.ts && node scripts/test-launch.mjs",
+    "test:analytics": "node scripts/test-analytics.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"
@@ -21,5 +25,8 @@
     "@types/three": "^0.180.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.7"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

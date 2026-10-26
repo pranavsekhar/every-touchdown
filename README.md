@@ -1,49 +1,62 @@
-# Every Touchdown — Phase 4
+# Every Touchdown
 
-Vite + TypeScript + direct Three.js. Detroit's complete 2025 offensive touchdown sculpture: **56 TDs, 35 passing and 21 rushing**, derived from nflverse play-by-play. No sample plays remain.
+An interactive NFL season sculpture built with Vite, TypeScript and Three.js. Each path is a real offensive passing or rushing touchdown. Hover/tap to inspect, click to hold a play, double-click to focus, or watch the season construct itself with **Play Season**.
 
 ## Run locally
 
-Node.js 22.12+ (or 20.19+), npm, and Python 3 for ingestion/tests.
+Node 22.12+ (or 20.19+), npm, and Python 3 for ingestion and data tests.
 
 ```sh
 npm install
 npm run dev
+npm run build
+npm run preview
 ```
 
-The normalized JSON is checked in, so the frontend needs no data download beyond its 40 KB season file and no backend. `npm run build` checks TypeScript and emits a static production build; `npm run preview` serves it.
+Open `/DET/2025`, `/KC/2024`, `/SF/2023`, or any available team/season. `/` opens Detroit 2025. Team and year pickers update the URL; back/forward restores the corresponding sculpture. Historical aliases such as `/OAK/2016` canonicalize to `/LV/2016` while showing the historical team name. Unknown combinations show an explicit recovery state.
 
-## Rebuild the dataset
+## Static archive and provenance
+
+The checked-in archive contains **320 team-seasons, 13,371 offensive touchdowns, 2016–2025**. All 32 NFL franchises are available in each of the ten supported seasons. Both regular season and postseason are included and labeled. No incomplete 2026 season is published.
+
+Source: [nflverse play-by-play](https://nflreadr.nflverse.com/reference/load_pbp.html), which documents source availability from 1999; this product intentionally ships only 2016–2025. [Team metadata](https://nflreadr.nflverse.com/reference/load_teams.html) supplies centralized names and colors in `src/data/teams.ts`. Current team abbreviations identify franchises across relocations; historical names are displayed for their applicable years.
+
+Every dataset is generated, never manually transcribed:
 
 ```sh
-npm run ingest
-# Force a fresh public release download:
-npm run ingest -- --refresh
-# Or process an existing official CSV / compressed CSV:
-npm run ingest -- --input /absolute/path/play_by_play_2025.csv.gz
+npm run ingest -- --seasons 2016:2025
+# A single season / team:
+npm run ingest -- --seasons 2024 --team KC
+# Refresh the official release instead of using the source cache:
+npm run ingest -- --seasons 2025 --refresh
+# Rebuild from an existing official source:
+npm run ingest -- --seasons 2025 --input /absolute/path/play_by_play_2025.csv.gz
 ```
 
-The standard-library Python pipeline downloads/caches the official nflverse release in `work/nflverse/`, scans the REG/POST season, filters on final touchdown and scoring-team flags, and excludes returns, conversion attempts, no-plays and other non-pass/rush scores. It preserves source IDs, player IDs, original descriptions, quarter/clock, LOS, air/YAC, run gap and coarse locations. The final source flags correctly handle overturned replay decisions and between-downs penalties.
+The Python standard-library pipeline caches official compressed releases in ignored `work/nflverse/`, reads CSV records once per season, normalizes franchise aliases, and retains scoring candidates and game accounting. It excludes returns, defensive TDs, conversion attempts, nullified scores and non-pass/rush recoveries. Each record preserves its original description, game/play IDs, air/YAC, run location/gap and source flags. Each dataset records the source URL and compressed-file SHA-256. Requests for seasons outside 2016–2025 write only to ignored `work/historical-data/`, never the production archive or picker. Audit reports are generated in ignored `work/audits/<year>/<team>.json`.
 
-Generated files:
+Files are published at `public/data/<season>/<team>.json`. `public/data/index.json` is an availability manifest rebuilt from published files. Missing/invalid LOS blocks publication; duplicate IDs fail ingestion. Missing/inconsistent air/YAC produces an explicitly unsegmented pass rather than a fabricated catch. **6 passes** across this archive use that fallback. The existing Detroit manual audit remains in `validation/` as a record of the prototype validation.
 
-- `public/data/2025/DET.json` — browser dataset with source URL, source SHA-256, summary and normalized records.
-- `validation/DET-2025.md` — readable debug summary and five normalized examples.
-- `validation/DET-2025.audit.json` — exhaustive exclusions, nullified attempts, missing fields, per-week counts and examples.
-- `validation/manual-verification.md` — manual checks against original source descriptions, with their limitations.
+## Geometry and interaction
 
-## Coordinate and visual meaning
+- Field length runs X −60…+60, scoring plane +50; LOS X = 50 − yardline_100.
+- For recorded passing splits: catch X = LOS X + signed air_yards; goal X − catch X = yards_after_catch. Negative-air screens are preserved. Zero YAC adds no ground trail.
+- Height and lateral positions are illustrative. Left/middle/right selects a region; play-ID seeds make placement stable. Rush location/gap shapes gentle ground splines, not invented tracking routes.
+- Left drag orbits; right/Shift-drag pans; scroll/pinch zooms. Two-finger touch pans and zooms. Minimum camera distance is 38, with above-field polar limits and bounded camera targets.
+- Thin paths have generous 8 px mouse / 12 px touch pick corridors. Hover reveals the whole play; click locks it and reveals the original description; empty click or Escape clears. Double-click/F focuses. Up/Down explores, Enter selects, Left/Right orbits, Shift+arrows pans, R resets.
+- Rich team-colored aerial threads sit over a pale printed field on warm off-white. Rushes are quieter, gray-green variations of the team color; selected threads deepen in pigment. The original touchdown geometry remains intact.
 
-- Field X length: −60…+60; Z width: −26.65…+26.65; scoring goal-line plane: **X=+50**.
-- `startYardline=100-yardline_100`; `LOS X=50-yardline_100`.
-- `catch X=LOS X+air_yards`; `score X-catch X=yards_after_catch`.
-- All plays travel toward the same goal line. Negative-air passes correctly travel backward before YAC moves forward; zero air is valid, not missing.
-- No arbitrary end-zone depth is added. The source's touchdown yardage ends at the goal-line plane.
-- An aerial pass ends at a subtle catch node. Nonzero YAC continues as a quieter, field-hugging blue trail. Zero YAC has no fabricated ground segment. Rushes use low silver trails.
-- Height is an illustrative, bounded exponential function of positive air distance. Left/middle/right uses seeded placement within the recorded region, not player tracking. Run location/gap influence the initial rushing direction, with bounded lateral movement on short runs.
-- Missing/inconsistent air or YAC yields an unsegmented pass, with no inferred catch node. Source nulls remain null. Missing LOS can fall back explicitly to touchdown yards; if neither exists, ingestion writes an audit and refuses to publish an incomplete season.
+## Playback and lifecycle
 
-## Validation
+Playback uses a pure deterministic timeline sorted by week, game/date, quarter, descending game clock, and numeric play ID. Path draw ranges reveal LOS → pass → catch → YAC → score. Completed plays settle to resting materials; future plays stay hidden. Scrubbing reconstructs the same state forward or backward, including endpoint pulses.
+
+Detroit 2025 remains 40 seconds. Other seasons scale with touchdown count (minimum 12 seconds), retaining distance-dependent draw duration and game separation. Hover/click inspection is suspended during playback; **orbit, pan, zoom, and smooth Reset View remain available while the timeline keeps running**. The opening overview move cancels on camera input. There is no ongoing autonomous drift. Pause/Resume, Restart, Exit and Escape behave consistently. Hidden tabs pause automatically.
+
+One renderer, one animation loop, and one set of application listeners persist across dataset changes. Requests are aborted and sequence-guarded; old playback, picking, navigation listeners, geometries, materials and textures are disposed. Camera position is preserved. Fade transitions protect the composition while metadata and geometry change together. Device pixel ratio is capped at 2. Reduced-motion preference removes fades, camera easing and the expanding score ring.
+
+Mobile captions flow below the scene. Modal team/year pickers retain keyboard focus, close on Escape, and disable unavailable combinations. Camera and playback controls occupy separate areas.
+
+## Verification
 
 ```sh
 npm run test:data
@@ -51,50 +64,22 @@ npm run test:geometry
 npm run test:interaction
 npm run test:navigation
 npm run test:playback
+npm run test:archive
 npm run build
 ```
 
-Tests cover real-source accounting, signed longitudinal invariants, deterministic geometry, field bounds, monotonic rushing distance, curved long runs, short rushes, zero YAC, and synthetic null/inconsistent values. Manual checks verify descriptions for five representative scores; source descriptions do not independently verify numerical air/YAC splits.
+Archive checks cover all 320 datasets: unique source IDs, count accounting, finite renderable geometry, signed longitudinal invariants, historical availability, and dynamic playback durations. Detroit regression tests retain exact geometry and picking checks. Navigation tests verify focus/reset completion, interruption and camera bounds. Playback tests check deterministic backward/forward seeking, segment order and material restoration.
 
-Drag to orbit, scroll/pinch to zoom, or use existing rotation/reset controls. Focus the field and use arrow keys/R for keyboard rotation/reset. There is no automatic ambient animation. Page design remains from Phase 1. The default camera is tuned for the complete season, with the scoring end closer to the viewer.
+Browser QA includes multiple high-scoring seasons, selector transitions, direct links, back/forward, invalid routes, live camera navigation during playback, resource counts after repeated switching, and narrow-screen captions/controls.
 
-Phase 4 season playback and exploration are implemented. Broader product features remain intentionally absent.
+## Production readiness (not deployed)
 
-## Phase 2.5 visual treatment
+`npm run build` produces a static `dist/` directory, including the complete ~10 MB archive; the client downloads only the small catalog and selected team-season. Configure the eventual static host to serve `index.html` for team/season routes, but preserve real static-file 404s. No database, backend, authentication or tracking is required.
 
-Aerial passes are fine blue threads at 42–58% opacity; YAC is 26%, and warm neutral rushes are 23%. Catch markers are smaller and translucent, without rings. Ground runs use deterministic centripetal splines with bounded lateral bends influenced by run location/gap; no source longitudinal coordinate is changed. Numbers, hashes, end-zone lettering and coordinate decoration are further subordinated. This remains the unselected baseline; Phase 3 only changes materials while a play is being explored.
+The shell includes title, description, favicon, Open Graph metadata and `public/og-preview.png`. The neutral social preview works for every route; runtime titles/descriptions reflect the selected season. Set an absolute production `og:image` URL when a deployment origin is chosen. Regenerate the preview with `scripts/render-og.py` using Python + Pillow. No deployment has been performed.
 
-## Phase 3 exploration
+## Final light visual direction
 
-Hover any aerial or ground segment to reveal its complete touchdown and a minimal caption. Click to lock the play and read its original description. Click another path to replace selection; click empty canvas or press Escape to clear. Dragging or pinching never selects or deselects a play, and single-click selection never moves the camera. Double-click (or F) gently focuses the play while retaining the viewing direction.
+Warm off-white canvas, a pale sage-neutral field, soft gray markings, and near-black editorial typography replace the dark exhibition palette. The sculpture carries expressive team color; the UI stays neutral. Play Season retains its deterministic mechanics with a small team-colored scoring ripple. Decorative study labels have been removed. There is no theme toggle and no new functionality.
 
-Picking uses pre-sampled curves projected into an 8 CSS-pixel corridor (12 for touch), with nearest-segment/depth tie-breaking. Projection is cached until the camera changes, and pointer picking runs at most once per frame. Hit corridors do not change visible geometry, and interaction never rebuilds meshes. Material opacity/color transitions settle in approximately 200 ms, or immediately with reduced motion. Every material's exact Phase 2.5 rest values are retained. Inactive paths now retain 68% of rest opacity during hover/selection, rather than 16%.
-
-Focus the sculpture: Up/Down explores individual plays, Enter locks selection, Escape clears, Left/Right orbits, and R resets the camera. Caption text is semantic HTML, safely assigned as text, with an accessible live region. The original description appears only for locked selections.
-
-Validation: 56/56 plays can be independently hit at the default camera; data and geometry checks still pass. Browser checks include passing/rushing hover, selection replacement, persistent selection during orbit, empty-space and Escape clearing, negative air yards, resumed hover after orbit, keyboard navigation, and narrow caption layout.
-
-## Phase 3.5 spatial navigation
-
-The field, markings and ambient environment are brighter while retaining a dark exhibition palette. Description and structured metadata share one left caption, with a soft readability scrim when the field moves behind it.
-
-- Left-drag orbits; right-drag or Shift-drag pans along the ground plane; scroll/pinch zooms. Two-finger touch combines pan and zoom.
-- Camera distance ranges from 38 to 255 yards (previous minimum 115), allowing approximately 3× closer inspection. Polar limits keep the viewpoint above the turf; target bounds are X ±55, Z ±25, Y 0.5–6.
-- Double-click a touchdown or press F on the explored play to focus. A 650 ms eased translation preserves viewing direction and fits the play, with reduced-motion support. New pointer/wheel navigation cancels focus immediately.
-- Reset View / R clears residual camera inertia and returns to the canonical camera and target, retaining play selection. Shift-arrow keys offer keyboard panning.
-- Pan gestures do not select/deselect; hover suspends during camera gestures and resumes on release. Real-data geometry and source JSON remain unchanged.
-
-Tests include all-play focus frames, target bounds, close-camera clearance, animation cancellation and exact overview reset. The same navigation remains available during paused playback.
-
-
-## Phase 4 — Play Season
-
-Play Season clears selection, fades the sculpture, and eases back to the canonical overview. A deterministic 40-second timeline builds all 56 touchdowns in week/game/quarter/descending-clock/numeric-play-ID order. Duration varies with touchdown distance and play type; short pauses separate plays and larger pauses separate games.
-
-Existing indexed tubes reveal from LOS to catch, then through YAC. Catch nodes briefly emphasize the handoff; a small expanding ground ring marks scoring. Completed plays return to their exact resting materials, future plays remain hidden. The timeline reuses the left caption without original descriptions and includes only a week/opponent label, Pause/Resume, Restart, Exit and a keyboard-accessible range scrubber.
-
-`timeline.ts` is pure chronology/timing. `DrawTouchdown.setProgress` reconstructs every segment and marker from progress without allocating geometry/materials. `SeasonPlayer` owns one time value, including settle/pulse state. Seeking pauses and deterministically reconstructs the requested instant, even backward; Resume continues there. Pause enables orbit/pan/zoom for spatial inspection; play picking remains suspended until exit. Escape exits. Switching away from the browser tab pauses automatically.
-
-The automatic camera drifts only six degrees across the whole season; it never follows a touchdown. Reduced-motion preference disables camera drift, opening camera interpolation, and the expanding scoring ring. At the end, a short beat resolves to the full sculpture and restores normal exploration. Exit also restores every draw range, marker scale and resting material. No real-data coordinates or source records change.
-
-Playback tests check all 56 paths, signed-air anatomy, same-clock ordering, independent time samples, backward/forward seeks, total duration, single-active-play invariant, and exact geometry/material restoration. Existing data, geometry, picking and navigation suites remain passing.
+Final visual pass: light gallery by default, persisted light/dark preference, curated pass/rush inks for all 32 teams, restrained scoring-end-zone identity and regulation-position goalposts. ALL/PASS/RUSH filters share the same visible play set with hit testing and Play Season; changing the filter exits playback and restores exploration. Theme changes preserve playback progress and geometry.

@@ -66,14 +66,14 @@ export function derivePath(play: Touchdown) {
   return { los, endX, endZ, startZ, airCurve, groundCurve, catchPoint };
 }
 
-export function createTouchdown(play: Touchdown) {
+export function createTouchdown(play: Touchdown, accent = '#0076b6') {
   const path = derivePath(play);
   if (!path) return null; // One malformed record must not crash the scene.
   const group = new THREE.Group(); group.name = play.id;
   group.userData = { touchdownId: play.id, playId: play.playId, gameId: play.gameId };
-  const blue = new THREE.Color('#84b9d0');
-  const yacBlue = new THREE.Color('#7399aa');
-  const silver = new THREE.Color('#bcbcb0');
+  const blue = new THREE.Color(accent);
+  const yacBlue = new THREE.Color(accent).lerp(new THREE.Color('#42867f'), .55);
+  const silver = new THREE.Color(accent).lerp(new THREE.Color('#6d7973'), .78);
   // Aerial threads carry the canopy; crowded red-zone plays remain present but quiet.
   const airWeight = Math.min(1, Math.max(0, play.airYards ?? 0) / 42);
   const line = (curve: THREE.Curve<THREE.Vector3>, color: THREE.Color, radius: number, opacity: number, name: string) => {
@@ -83,8 +83,8 @@ export function createTouchdown(play: Touchdown) {
   const point = (position: THREE.Vector3, color: THREE.Color, radius: number, opacity: number, name: string) => {
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 10, 6), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false })); mesh.position.copy(position); mesh.name = name; group.add(mesh);
   };
-  if (path.airCurve) line(path.airCurve, blue, 0.082 + airWeight * 0.023, 0.42 + airWeight * 0.16, 'pass');
-  if (path.groundCurve) line(path.groundCurve, play.type === 'pass' ? yacBlue : silver, play.type === 'pass' ? 0.073 : 0.078, play.type === 'pass' ? 0.26 : 0.23, play.type === 'pass' ? 'yac' : 'rush');
+  if (path.airCurve) line(path.airCurve, blue, 0.095 + airWeight * 0.023, 0.66 + airWeight * 0.16, 'pass');
+  if (path.groundCurve) line(path.groundCurve, play.type === 'pass' ? yacBlue : silver, play.type === 'pass' ? 0.073 : 0.078, play.type === 'pass' ? 0.48 : 0.40, play.type === 'pass' ? 'yac' : 'rush');
   if (path.catchPoint) point(path.catchPoint, blue, 0.19, 0.4, 'catch');
   point(v(path.los, 0.22, path.startZ), play.type === 'pass' ? blue : silver, 0.09, 0.19, 'los');
   // The catch is already the endpoint for zero-YAC scores. Avoid doubled markers and rings.

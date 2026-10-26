@@ -1,3 +1,5 @@
+import { track } from '../analytics';
+import { appearance } from '../touchdowns/ink.js';
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Touchdown } from '../data/types.js';
@@ -30,13 +32,9 @@ export class Exploration {
   constructor(private container: HTMLElement, private canvas: HTMLCanvasElement, private camera: THREE.Camera, private controls: OrbitControls, paths: RenderedTouchdown[], plays: Touchdown[], private focus: (id: string) => void) {
     this.picker = new PathPicker(paths);
     this.plays = new Map(plays.map(p => [p.id, p]));
-    const colors: Record<string, THREE.Color> = {
-      pass: new THREE.Color('#89c9e9'), yac: new THREE.Color('#c7dfdb'), rush: new THREE.Color('#e4dfd0'),
-      catch: new THREE.Color('#effbff'), los: new THREE.Color('#9bcddd'), score: new THREE.Color('#e3eee9'),
-    };
     for (const { group } of paths) group.traverse(object => {
       if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshBasicMaterial) {
-        this.records.push({ id: group.name, material: object.material, opacity: object.material.opacity, color: object.material.color.clone(), highlight: colors[object.name] ?? colors.pass });
+        this.records.push({ id: group.name, material: object.material, ...appearance(object.material) });
       }
     });
     const options = { signal: this.abort.signal };
@@ -104,15 +102,15 @@ export class Exploration {
   private pointerLeave = () => { if (this.suspended) return; if (!this.down) { this.pointer = null; this.hovered = null; this.refresh(); this.canvas.style.cursor = 'grab'; } };
   private escape = (e: KeyboardEvent) => {
     if (this.suspended) return;
-    if (e.key !== 'Escape') return;
+    if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
     this.selected = null; this.hovered = null; this.pointer = null; this.refresh(); this.canvas.style.cursor = 'grab';
   };
   private keyDown = (e: KeyboardEvent) => {
-    if (this.suspended) return;
     if (e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.preventDefault(); const delta = new THREE.Vector3(e.key === 'ArrowLeft' ? -4 : e.key === 'ArrowRight' ? 4 : 0, 0, e.key === 'ArrowUp' ? -4 : e.key === 'ArrowDown' ? 4 : 0);
       this.controls.target.add(delta); this.camera.position.add(delta); this.controls.update(); return;
     }
+    if (this.suspended) return;
     if (e.key.toLowerCase() === 'f' && this.active) { e.preventDefault(); this.selected = this.active; this.refresh(); this.focus(this.active); return; }
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -137,14 +135,16 @@ export class Exploration {
     this.description.setAttribute('aria-hidden', String(!locked));
     if (!next) return;
     const p = this.plays.get(next)!;
+    if(locked)track('touchdown_select',{type:p.type,playId:String(p.playId)});
+    this.caption.dataset.type=p.type;
     const surname = (name: string | null) => name?.replace(/^[A-Z]\./, '') ?? 'Unknown';
-    const rushName = p.scorer === 'J.Gibbs' ? 'Jahmyr Gibbs' : p.scorer === 'D.Montgomery' ? 'David Montgomery' : p.scorer?.replace('.', '. ') ?? 'Unknown';
+    const rushName = p.scorer?.replace('.', '. ') ?? 'Unknown';
     document.querySelector('#play-name')!.textContent = p.type === 'pass' ? `${surname(p.passer)} → ${surname(p.scorer)}` : rushName;
     document.querySelector('#play-yards')!.textContent = `${p.yards ?? '—'} ${p.type === 'rush' ? 'YD RUSH' : 'YDS'}`;
     const split = document.querySelector<HTMLElement>('#play-split')!;
     split.textContent = p.type === 'pass' ? (p.geometry.segmentation === 'recorded' ? `${p.airYards} AIR · ${p.yardsAfterCatch} YAC` : 'AIR / YAC UNAVAILABLE') : '';
     split.hidden = p.type !== 'pass';
-    document.querySelector('#play-game')!.textContent = `WEEK ${p.week} · ${p.gameId.split('_')[2] === 'DET' ? 'at' : 'vs'} ${p.opponent}`;
+    document.querySelector('#play-game')!.textContent = `WEEK ${p.week} · ${p.homeAway === 'away' ? 'at' : 'vs'} ${p.opponent}`;
     this.description.textContent = locked ? p.description : '';
   }
   setSuspended(value: boolean) {
@@ -165,5 +165,6 @@ export class Exploration {
       if (Math.abs(target - r.material.opacity) < 0.0001) { r.material.opacity = target; r.material.color.copy(focused ? r.highlight : r.color); }
     }
   }
+  refreshAppearance() { for(const r of this.records) Object.assign(r,appearance(r.material)); }
   dispose() { this.abort.abort(); this.controls.removeEventListener('change', this.onCameraChange); this.controls.removeEventListener('start', this.onNavigationStart); this.controls.removeEventListener('end', this.onNavigationEnd); }
 }

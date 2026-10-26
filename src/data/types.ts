@@ -1,7 +1,7 @@
 export type Location = 'left' | 'middle' | 'right';
 export type Touchdown = {
   id: string; playId: string; gameId: string; team: string; opponent: string;
-  season: number; seasonType: 'REG' | 'POST'; week: number; gameDate: string;
+  homeAway?: 'home' | 'away'; season: number; seasonType: 'REG' | 'POST'; week: number; gameDate: string;
   type: 'pass' | 'rush'; passer: string | null; passerId: string | null; scorer: string | null; scorerId: string | null;
   startYardline: number | null; yardline100: number | null; yards: number | null;
   airYards: number | null; yardsAfterCatch: number | null; location: Location | null;

@@ -38,6 +38,16 @@ class IngestionTests(unittest.TestCase):
         for override in ({'td_team':'GB'}, {'touchdown':'0','play_type':'no_play'}, {'play_type':'punt','return_touchdown':'1'}, {'posteam':'GB'}, {'pass_touchdown':'0','rush_touchdown':'0'}, {'two_point_attempt':'1'}, {'interception':'1'}):
             self.assertIsNotNone(m.exclusion_reason(BASE | override, 'DET'))
         self.assertIsNone(m.exclusion_reason(BASE | {'penalty':'1'}, 'DET')) # Between-downs penalty can coexist with valid TD.
+    def test_single_play_type_does_not_break_representatives(self):
+        for row in (BASE, BASE | {'play_type':'run','pass_touchdown':'0','rush_touchdown':'1'}):
+            dataset, report = m.build([row], 'DET', 2025, {})
+            self.assertEqual(dataset['summary']['total'], 1)
+            self.assertTrue(report['representativeTouchdowns'])
+    def test_historical_aliases(self):
+        self.assertEqual(m.canonical('STL'), 'LA')
+        self.assertEqual(m.canonical('SD'), 'LAC')
+        self.assertEqual(m.canonical('OAK'), 'LV')
+        self.assertEqual(m.canonical('DET'), 'DET')
     def test_real_dataset_accounting_and_longitudinal_invariants(self):
         data = json.loads((m.ROOT / 'public/data/2025/DET.json').read_text())
         plays = data['touchdowns']
@@ -51,6 +61,6 @@ class IngestionTests(unittest.TestCase):
             if p['type']=='pass':
                 self.assertEqual(p['geometry']['catchX']-p['geometry']['losX'], p['airYards'])
                 self.assertEqual(50-p['geometry']['catchX'], p['yardsAfterCatch'])
-        self.assertEqual(data['summary']['officialDetroitTDs'], len(plays)+data['summary']['excludedOfficialTDs'])
+        self.assertEqual(data['summary']['officialTeamTDs'], len(plays)+data['summary']['excludedOfficialTDs'])
 
 if __name__ == '__main__': unittest.main()

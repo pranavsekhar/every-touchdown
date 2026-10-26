@@ -24,9 +24,10 @@ export function focusFrame(path: RenderedTouchdown, camera: THREE.PerspectiveCam
 }
 export class Navigation {
   private motion: { from: THREE.Vector3; to: THREE.Vector3; direction: THREE.Vector3; startDistance: number; endDistance: number; elapsed: number } | null = null;
+  private overviewMotion: { position: THREE.Vector3; target: THREE.Vector3; elapsed: number } | null = null;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)');
   private scratch = new THREE.Vector3();
-  private cancel = () => { this.motion = null; };
+  private cancel = () => { this.motion = null; this.overviewMotion = null; };
   constructor(private camera: THREE.PerspectiveCamera, private controls: OrbitControls, private paths: RenderedTouchdown[]) {
     controls.enablePan = true; controls.screenSpacePanning = false;
     controls.panSpeed = 0.72; controls.rotateSpeed = 0.5; controls.zoomSpeed = 0.8;
@@ -48,6 +49,7 @@ export class Navigation {
     this.cancel(); this.settle();
     this.controls.target.copy(OVERVIEW_TARGET); this.camera.position.copy(OVERVIEW_POSITION); this.controls.update();
   }
+  overview() { this.cancel(); this.settle(); this.overviewMotion = {position:this.camera.position.clone(), target:this.controls.target.clone(), elapsed:0}; }
   focus(id: string) {
     const path = this.paths.find(p => p.group.name === id); if (!path) return;
     this.settle();
@@ -56,6 +58,11 @@ export class Navigation {
     this.motion = { from: this.controls.target.clone(), to: frame.center, direction: offset.clone().normalize(), startDistance: offset.length(), endDistance: frame.distance, elapsed: 0 };
   }
   update(dt: number) {
+    if(this.overviewMotion) {
+      const m = this.overviewMotion; m.elapsed += dt; const t = this.reduced.matches ? 1 : Math.min(1,m.elapsed/.85); const ease=t*t*(3-2*t);
+      this.camera.position.lerpVectors(m.position,OVERVIEW_POSITION,ease); this.controls.target.lerpVectors(m.target,OVERVIEW_TARGET,ease);
+      if(t===1) this.overviewMotion=null;
+    }
     if (this.motion) {
       const m = this.motion; m.elapsed += dt;
       const t = this.reduced.matches ? 1 : Math.min(1, m.elapsed / 0.65);

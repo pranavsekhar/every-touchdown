@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
 from pathlib import Path
 from urllib.request import urlopen, Request
@@ -14,6 +15,8 @@ from urllib.request import urlopen, Request
 ROOT = Path(__file__).resolve().parents[1]
 LOCATIONS = {'left', 'middle', 'right'}
 GAPS = {'guard', 'tackle', 'end'}
+ALIASES = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA', 'JAC': 'JAX'}
+def canonical(team): return ALIASES.get(team, team)
 
 def number(value):
     try:
@@ -74,6 +77,7 @@ def normalize(row):
         flags.append('Missing/inconsistent total yards; source LOS retained')
     return {
         'id': row['game_id'] + ':' + row['play_id'], 'playId': row['play_id'], 'gameId': row['game_id'],
+        'homeAway': 'home' if row['home_team'] == row['td_team'] else 'away',
         'team': row['td_team'], 'opponent': row['away_team'] if row['home_team'] == row['td_team'] else row['home_team'],
         'season': int(row['season']), 'seasonType': row['season_type'], 'week': int(row['week']), 'gameDate': row['game_date'],
         'type': kind, 'passer': row.get('passer_player_name') or None, 'passerId': row.get('passer_player_id') or None,
@@ -112,15 +116,16 @@ def build(rows, team, season, source):
         absent = [k for k in fields if p[k] is None]
         if absent: missing.append({'id': p['id'], 'fields': absent})
     summary = {'total': len(plays), 'passing': len(passes), 'rushing': len(rushes), 'games': len(games),
-               'officialDetroitTDs': sum(r.get('td_team') == team for r in official),
+               'officialTeamTDs': sum(r.get('td_team') == team for r in official),
                'excludedOfficialTDs': len(excluded), 'nullifiedScoringAttempts': len(nullified),
                'missingAirYacLocation': len(missing), 'missingRunGap': sum(p['runGap'] is None for p in rushes),
                'negativeAirYards': sum(p['airYards'] is not None and p['airYards'] < 0 for p in passes),
                'unsegmentedPasses': sum(p['geometry']['segmentation'] == 'unsegmented' for p in passes),
                'unrenderablePlays': sum(p['geometry']['losX'] is None for p in plays)}
-    selectors = [max(passes, key=lambda p: p['yards'] or 0), min(passes, key=lambda p: p['airYards'] if p['airYards'] is not None else 999),
-                 next((p for p in passes if p['airYards'] == 0), passes[0]), max(rushes, key=lambda p: p['yards'] or 0), min(rushes, key=lambda p: p['yards'] or 0)]
-    report = {'source': source, 'summary': summary, 'gameIds': games, 'excluded': excluded, 'nullified': nullified, 'missing': missing,
+    selectors = []
+    if passes: selectors += [max(passes, key=lambda p: p['yards'] or 0), min(passes, key=lambda p: p['airYards'] if p['airYards'] is not None else 999)]
+    if rushes: selectors += [max(rushes, key=lambda p: p['yards'] or 0), min(rushes, key=lambda p: p['yards'] or 0)]
+    report = {'team': team, 'season': season, 'source': source, 'summary': summary, 'gameIds': games, 'excluded': excluded, 'nullified': nullified, 'missing': missing,
               'missingRunGap': [{'id': p['id'], 'runLocation': p['runLocation']} for p in rushes if p['runGap'] is None],
               'flagged': [{'id': p['id'], 'flags': p['dataFlags']} for p in plays if p['dataFlags']],
               'negativeAirYards': [p['id'] for p in passes if p['airYards'] is not None and p['airYards'] < 0],
@@ -128,51 +133,62 @@ def build(rows, team, season, source):
     dataset = {'schemaVersion': 1, 'team': team, 'season': season, 'seasonTypes': sorted({p['seasonType'] for p in plays}), 'source': source, 'summary': summary, 'touchdowns': plays}
     return dataset, report
 
-def markdown(report):
-    s = report['summary']
-    lines = ['# Detroit 2025 — ingestion audit', '', f"Source: [nflverse 2025 PBP]({report['source']['url']}).", '',
-        f"- **{s['total']} offensive TDs: {s['passing']} passing, {s['rushing']} rushing**, across {s['games']} games.",
-        f"- {s['officialDetroitTDs']} official Detroit TDs; {s['excludedOfficialTDs']} excluded return TD.",
-        f"- {s['nullifiedScoringAttempts']} nullified scoring attempts separately rejected (not part of official TD total).",
-        f"- {s['missingAirYacLocation']} plays missing air/YAC/location; {s['unsegmentedPasses']} passing fallbacks; {s['unrenderablePlays']} unrenderable plays.",
-        f"- {s['missingRunGap']} rushes lack run_gap (all are recorded as middle); no gap is invented.",
-        f"- {s['negativeAirYards']} negative-air-yard passes retained with catches behind LOS.", '',
-        '## Exclusions', '']
-    for p in report['excluded'] + report['nullified']:
-        lines += [f"- `{p['id']}` — {p['reason']}", f"  {p['description']}"]
-    lines += ['', '## Normalized representative plays', '', 'X is yards, with the scoring goal line at +50. Air/YAC are signed longitudinal distances, not curved path lengths. Scoring stops at the goal-line plane; no end-zone depth is invented.', '']
-    for p in report['representativeTouchdowns']:
-        lines += [f"### Week {p['week']} · {p['scorer']} · {p['yards']:g}-yard {p['type']}", '', '```json', json.dumps(p, indent=2), '```', '']
-    lines += ['## Provenance', '', f"Compressed source SHA-256: `{report['source']['sha256']}`", '', 'The full machine-readable audit is DET-2025.audit.json. Re-run ingestion to regenerate both reports. Manual description checks are documented separately in manual-verification.md.']
-    return '\n'.join(lines) + '\n'
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input', type=Path, help='Existing nflverse .csv or .csv.gz; otherwise download/cache release')
-    parser.add_argument('--refresh', action='store_true')
-    args = parser.parse_args()
-    season, team = 2025, 'DET'
+def generate(season, args):
     url = f'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.csv.gz'
     path = args.input or ROOT / 'work' / 'nflverse' / f'play_by_play_{season}.csv.gz'
     if args.input is None and (args.refresh or not path.exists()):
         path.parent.mkdir(parents=True, exist_ok=True)
-        with urlopen(Request(url, headers={'User-Agent': 'EveryTouchdown/0.2'}), timeout=90) as response:
+        with urlopen(Request(url, headers={'User-Agent': 'EveryTouchdown/1.0'}), timeout=180) as response:
             raw = response.read()
-        gzip.decompress(raw) # Do not cache a bad download.
+        gzip.decompress(raw)
         path.write_bytes(raw)
-    raw = path.read_bytes()
-    source = {'provider': 'nflverse / nflfastR', 'url': url, 'sha256': hashlib.sha256(raw).hexdigest(), 'format': 'csv.gz' if path.suffix == '.gz' else 'csv', 'scope': '2025 REG + POST (Detroit has REG games only)', 'dictionary': 'https://nflreadr.nflverse.com/articles/dictionary_pbp.html'}
-    text = gzip.decompress(raw).decode('utf-8-sig') if path.suffix == '.gz' else raw.decode('utf-8-sig')
-    dataset, report = build(csv.DictReader(io.StringIO(text)), team, season, source)
-    destination = ROOT / 'public' / 'data' / str(season) / f'{team}.json'
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    audit = ROOT / 'validation'; audit.mkdir(exist_ok=True)
-    (audit / 'DET-2025.audit.json').write_text(json.dumps(report, indent=2) + '\n')
-    (audit / 'DET-2025.md').write_text(markdown(report))
-    if dataset['summary']['unrenderablePlays']:
-        raise ValueError('Missing LOS: audit written, but incomplete season not published')
-    destination.write_text(json.dumps(dataset, separators=(',', ':')) + '\n')
-    print(json.dumps(report['summary'], indent=2))
-    print(f'Wrote {destination} ({destination.stat().st_size:,} bytes)')
+    source = {'provider': 'nflverse / nflfastR', 'url': url, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'format': 'csv.gz' if path.suffix == '.gz' else 'csv', 'scope': f'{season} REG + POST', 'dictionary': 'https://nflreadr.nflverse.com/articles/dictionary_pbp.html'}
+    rows, games, teams = [], set(), set()
+    opener = gzip.open if path.suffix == '.gz' else open
+    with opener(path, 'rt', encoding='utf-8-sig', newline='') as stream:
+        for row in csv.DictReader(stream):
+            if row.get('season_type') not in ('REG', 'POST'): continue
+            for key in ('home_team', 'away_team', 'posteam', 'td_team'):
+                row[key] = canonical(row.get(key))
+            teams.update([row['home_team'], row['away_team']])
+            # Retain game accounting and scoring candidates, not an entire season's wide table.
+            if row['game_id'] not in games or flag(row, 'touchdown') or 'TOUCHDOWN' in row.get('desc', ''):
+                rows.append(row)
+            games.add(row['game_id'])
+    destination = ROOT / ('public/data' if 2016 <= season <= 2025 else 'work/historical-data') / str(season)
+    destination.mkdir(parents=True, exist_ok=True)
+    audit = ROOT / 'work' / 'audits' / str(season); audit.mkdir(parents=True, exist_ok=True)
+    result = {}
+    for team in sorted(teams):
+        if not team or (args.team != 'ALL' and team != canonical(args.team)): continue
+        dataset, report = build(rows, team, season, source)
+        (audit / f'{team}.json').write_text(json.dumps(report, indent=2)+'\n')
+        if dataset['summary']['unrenderablePlays']:
+            raise ValueError(f'{team}/{season}: missing LOS; refusing incomplete season')
+        (destination / f'{team}.json').write_text(json.dumps(dataset,separators=(',',':'))+'\n')
+        result[team] = dataset['summary']
+    print(f'{season}: {len(result)} teams / {sum(v["total"] for v in result.values())} offensive touchdowns', flush=True)
+    return result
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--input', type=Path)
+    parser.add_argument('--refresh', action='store_true')
+    parser.add_argument('--seasons', default='2025', help='Inclusive range, e.g. 2016:2025, or comma-separated years')
+    parser.add_argument('--team', default='ALL')
+    parser.add_argument('--workers', type=int, default=3)
+    args = parser.parse_args()
+    seasons = list(range(int(args.seasons.split(':')[0]),int(args.seasons.split(':')[1])+1)) if ':' in args.seasons else [int(s) for s in args.seasons.split(',')]
+    if args.input and len(seasons) != 1: parser.error('--input requires one season')
+    if any(s < 1999 or s > 2025 for s in seasons): parser.error('Supported completed seasons: 1999–2025')
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        list(pool.map(lambda season: generate(season,args), seasons))
+    # Availability comes only from validated artifacts, never from a promised year range.
+    manifest = {'schemaVersion': 1, 'scope': 'Regular season + postseason', 'seasons': {}}
+    for path in sorted((ROOT / 'public/data').glob('*/*.json')):
+        d = json.loads(path.read_text())
+        if not 2016 <= d['season'] <= 2025: continue
+        manifest['seasons'].setdefault(str(d['season']), {})[d['team']] = {k:d['summary'][k] for k in ('total','passing','rushing','games')}
+    (ROOT / 'public/data/index.json').write_text(json.dumps(manifest,separators=(',',':'))+'\n')
 
 if __name__ == '__main__': main()

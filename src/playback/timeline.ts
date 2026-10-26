@@ -13,12 +13,13 @@ export function buildTimeline(plays: Touchdown[]) {
   const weights = ordered.map(p => 0.29 + Math.sqrt(Math.max(0, p.yards ?? 0)) * 0.053 + (p.type === 'pass' ? 0.09 : 0));
   const opening = 1.2, ending = 1.5, settle = 0.19;
   const gaps: number[] = ordered.map((p, i) => i === ordered.length - 1 ? 0 : ordered[i + 1].gameId !== p.gameId ? 0.29 : 0.045);
-  const scale = (40 - opening - ending - settle * ordered.length - gaps.reduce((a, b) => a + b, 0)) / weights.reduce((a, b) => a + b, 0);
+  const scale = (Math.max(12, 2.7 + ordered.length * (37.3 / 56)) - opening - ending - settle * ordered.length - gaps.reduce((a, b) => a + b, 0)) / weights.reduce((a, b) => a + b, 0);
   let cursor = opening;
   const cues: Cue[] = ordered.map((play, i) => {
     const duration = weights[i] * scale;
     // Signed air yards remain in the geometry; timing uses distance travelled.
-    const air = Math.abs(play.airYards ?? 0), yac = Math.abs(play.yardsAfterCatch ?? 0);
+    const recorded = play.geometry.segmentation === 'recorded';
+    const air = Math.abs(play.airYards ?? 0), yac = recorded ? Math.abs(play.yardsAfterCatch ?? 0) : 0;
     const catchAt = play.type === 'pass' ? (yac > 0 ? Math.max(0.32, Math.min(0.8, air / (air + yac || 1))) : 1) : 0;
     const cue = { play, start: cursor, drawEnd: cursor + duration, end: cursor + duration + settle, catchAt };
     cursor = cue.end + gaps[i]; return cue;

@@ -1,0 +1,12 @@
+# Pre-deployment report
+
+- Build: production build and strict TypeScript pass. All nine test suites pass; no linter is configured. Vite's only advisory is the 563 kB JavaScript chunk (145 kB gzip).
+- Landing: Detroit 2025, approved canonical camera; immediate shell and cancellable 2.1-second field/path reveal. Reduced-motion skips it. Explicit Play Season remains separate.
+- Routing: production-preview hard navigation checked for DET/2025, MIA/2023, MIA/2025, KC/2018, SF/2023 and NYJ/2023. Back/forward, selectors, invalid team/year and pre-2016 fallback checked. Simulated missing data produced a visible recovery message, then recovered after restoration. Build generates 320 route-specific HTML pages with metadata. Cloudflare SPA fallback is documented.
+- Accessibility: semantic controls, visible keyboard focus, field keyboard inspection, Escape deselection, native modal with focus containment/restoration; reduced-motion camera reset tested. Help explains anatomy, data uncertainty and controls.
+- Mobile: 360×800, 390×844 and 430×932 layouts, modal, selectors, filters and playback inspected without horizontal overflow. These were browser viewport tests, not physical touch-device tests. Pinch and two-finger pan need a real-device check.
+- Performance: 20 team switches returned to 226 geometries / 2 textures for DET each time. Five repeated playback/pause/resume/restart/exit, filter, theme and select/deselect cycles restored clean state. Camera drag/pan/zoom/reset worked during playback. Picker test averaged 0.030 ms/query. No normal-use production console warnings/errors. GPU resource stability was measured; this was not a JS heap profiler or hardware FPS benchmark.
+- Analytics: nine requested GA4 event hooks and tests added. Disabled without VITE_GA_MEASUREMENT_ID. No ID exists yet, so live delivery is unverified. Storage/ad consent defaults denied; DNT respected; no app identifiers or query/referrer payloads. Setup details in LAUNCH.md.
+- Hygiene: no mock datasets in src; supported archive remains 2016–2025. Generated assets/dependencies/local env ignored. Bundle scan found no local paths or common credential patterns. No deployment performed.
+
+No identified code/build blocker. Outstanding launch verification: physical-device gestures and GA4 delivery once configured. Cloudflare URL and measurement ID are deployment-time configuration, not invented placeholders.
